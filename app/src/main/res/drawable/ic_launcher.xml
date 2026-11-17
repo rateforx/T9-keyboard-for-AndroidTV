@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder icon (keypad motif). Final artwork comes in M3. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF202124"
+        android:pathData="M8,0h32a8,8 0,0 1,8 8v32a8,8 0,0 1,-8 8h-32a8,8 0,0 1,-8 -8v-32a8,8 0,0 1,8 -8z" />
+    <path
+        android:fillColor="#FF8AB4F8"
+        android:pathData="M11,7h6v6h-6z M21,7h6v6h-6z M31,7h6v6h-6z M11,16h6v6h-6z M21,16h6v6h-6z M31,16h6v6h-6z M11,25h6v6h-6z M21,25h6v6h-6z M31,25h6v6h-6z M21,34h6v6h-6z" />
+</vector>

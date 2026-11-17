@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_status">Klawiatura włączona: %1$s · wybrana: %2$s</string>
+    <string name="yes">tak</string>
+    <string name="no">nie</string>
+    <string name="setup_enable">Włącz klawiaturę</string>
+    <string name="setup_pick">Wybierz klawiaturę</string>
+    <string name="setup_no_settings">Ten telewizor nie ma ekranu ustawień klawiatur. Wejdź w Ustawienia → System → Klawiatura.</string>
+    <string name="setup_test_label">Pola testowe — wciśnij OK, potem pisz przyciskami 0–9:</string>
+    <string name="setup_test_hint">Tekst</string>
+    <string name="setup_search_hint">Szukaj</string>
+    <string name="setup_password_hint">Hasło</string>
+    <string name="setup_number_hint">Liczba</string>
+
+    <string name="action_search">Szukaj</string>
+    <string name="action_go">Idź</string>
+    <string name="action_send">Wyślij</string>
+    <string name="action_next">Dalej</string>
+    <string name="action_done">Gotowe</string>
+    <string name="action_previous">Wstecz</string>
+</resources>

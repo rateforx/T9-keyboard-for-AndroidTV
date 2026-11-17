@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder TV banner (320x180). Final PNG with the app name (Play requirement TV-BN) comes in M3. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#FF202124"
+        android:pathData="M0,0h320v180h-320z" />
+    <path
+        android:fillColor="#FF8AB4F8"
+        android:pathData="M40,30h22v22h-22z M70,30h22v22h-22z M100,30h22v22h-22z M40,60h22v22h-22z M70,60h22v22h-22z M100,60h22v22h-22z M40,90h22v22h-22z M70,90h22v22h-22z M100,90h22v22h-22z M70,120h22v22h-22z" />
+    <!-- "T" -->
+    <path
+        android:fillColor="#FFE8EAED"
+        android:pathData="M160,45h60v14h-23v76h-14v-76h-23z" />
+    <!-- "9" -->
+    <path
+        android:fillColor="#FFE8EAED"
+        android:pathData="M232,45h48v90h-14v-38h-34zM246,59v24h20v-24z" />
+</vector>
