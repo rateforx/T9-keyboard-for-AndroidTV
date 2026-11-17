@@ -27,13 +27,16 @@ import io.github.rateforx.t9tv.R
  */
 class T9ImeService : InputMethodService() {
 
-    private enum class CaseMode(val label: String) {
-        LOWER("abc"), SENTENCE("Abc"), UPPER("ABC");
+    /** Ordinals match [KeyLayout.caseLabels] (abc, Abc, ABC). */
+    private enum class CaseMode {
+        LOWER, SENTENCE, UPPER;
 
         fun next(): CaseMode = entries[(ordinal + 1) % entries.size]
     }
 
-    private val engine = MultiTapEngine()
+    private lateinit var layouts: LayoutRepository
+    private lateinit var layout: KeyLayout
+    private lateinit var engine: MultiTapEngine
     private val handler = Handler(Looper.getMainLooper())
     private val commitPendingRunnable = Runnable { commitPending() }
     private val consumedDowns = BooleanArray(KEY_TABLE_SIZE)
@@ -51,6 +54,9 @@ class T9ImeService : InputMethodService() {
     override fun onCreate() {
         super.onCreate()
         debugLog = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        layouts = LayoutRepository(this)
+        layout = layouts.selected()
+        engine = MultiTapEngine(layout)
     }
 
     override fun onCreateInputView(): View {
@@ -336,7 +342,8 @@ class T9ImeService : InputMethodService() {
                 variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                 variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
             )
-        engine.setLayout(polish = true, web = web)
+        layout = layouts.selected()
+        engine.setLayout(layout, web)
         caseMode = if (!password && !web && (type and CAP_FLAGS) != 0) CaseMode.SENTENCE else CaseMode.LOWER
         actionLabel = actionLabelFor(ei)
         syncKeypad()
@@ -377,8 +384,8 @@ class T9ImeService : InputMethodService() {
 
     private fun syncKeypad() {
         val v = keypad ?: return
-        v.setCycles(Array(10) { engine.cycle(it) })
-        v.setModeLabel(if (numeric) "123" else caseMode.label, caseMode == CaseMode.UPPER, numeric)
+        v.setCycles(engine.cycles, engine.upperCycles)
+        v.setModeLabel(if (numeric) "123" else layout.caseLabels[caseMode.ordinal], caseMode == CaseMode.UPPER, numeric)
         v.setActionLabel(actionLabel)
         v.focusedButton = focusedButton
         if (!engine.hasPending) v.clearActive()

@@ -5,6 +5,7 @@
     <string name="no">nie</string>
     <string name="setup_enable">Włącz klawiaturę</string>
     <string name="setup_pick">Wybierz klawiaturę</string>
+    <string name="setup_layout">Układ: %1$s</string>
     <string name="setup_no_settings">Ten telewizor nie ma ekranu ustawień klawiatur. Wejdź w Ustawienia → System → Klawiatura.</string>
     <string name="setup_test_label">Pola testowe — wciśnij OK, potem pisz przyciskami 0–9:</string>
     <string name="setup_test_hint">Tekst</string>

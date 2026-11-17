@@ -7,8 +7,15 @@ package io.github.rateforx.t9tv.ime
  * on timeout via [commit], and must [commit] before pressing a different key.
  * Pure Kotlin (unit-testable on the JVM).
  */
-class MultiTapEngine {
-    private var cycles: Array<String> = KeyLayouts.cycles(polish = true, web = false)
+class MultiTapEngine(layout: KeyLayout) {
+
+    /** Lower-case cycle of every key (index = key); the digit is the last element. */
+    var cycles: Array<String> = layout.cycles(web = false)
+        private set
+
+    /** Upper-case counterpart of [cycles]. */
+    var upperCycles: Array<String> = layout.upperCycles(web = false)
+        private set
 
     /** Key (0–9) of the pending character, or -1 when nothing is pending. */
     var activeKey = -1
@@ -26,12 +33,12 @@ class MultiTapEngine {
 
     val hasPending: Boolean get() = activeKey >= 0
 
-    fun setLayout(polish: Boolean, web: Boolean) {
+    /** Switches the layout; [web] selects the e-mail/URL variant. Drops a pending character. */
+    fun setLayout(layout: KeyLayout, web: Boolean) {
         reset()
-        cycles = KeyLayouts.cycles(polish, web)
+        cycles = layout.cycles(web)
+        upperCycles = layout.upperCycles(web)
     }
-
-    fun cycle(key: Int): String = cycles[key]
 
     /**
      * Pressing the pending key advances its cycle; any other key starts a new cycle
@@ -74,8 +81,7 @@ class MultiTapEngine {
 
     fun cancel() = reset()
 
-    private fun charAt(index: Int): Char =
-        cycles[activeKey][index].let { if (activeUpper) it.uppercaseChar() else it }
+    private fun charAt(index: Int): Char = (if (activeUpper) upperCycles else cycles)[activeKey][index]
 
     private fun reset() {
         activeKey = -1

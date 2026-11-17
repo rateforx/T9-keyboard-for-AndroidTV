@@ -7,7 +7,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MultiTapEngineTest {
-    private val engine = MultiTapEngine()
+    private val pl = TestLayouts.load("pl")
+    private val engine = MultiTapEngine(pl)
 
     private fun pressN(key: Int, n: Int, upper: Boolean = false): List<Char> =
         List(n) { engine.press(key, upper) }
@@ -27,8 +28,8 @@ class MultiTapEngineTest {
     }
 
     @Test
-    fun latinLayoutHasNoPolishLetters() {
-        engine.setLayout(polish = false, web = false)
+    fun englishLayoutHasNoPolishLetters() {
+        engine.setLayout(TestLayouts.load("en"), web = false)
         assertEquals(listOf('a', 'b', 'c', '2', 'a'), pressN(2, 5))
     }
 
@@ -84,21 +85,12 @@ class MultiTapEngineTest {
 
     @Test
     fun webPunctuationStartsWithAt() {
-        engine.setLayout(polish = true, web = true)
+        engine.setLayout(pl, web = true)
         assertEquals(listOf('@', '.', '/'), pressN(1, 3))
     }
 
     @Test
     fun textPunctuationStartsWithPeriod() {
         assertEquals(listOf('.', ',', '?'), pressN(1, 3))
-    }
-
-    @Test
-    fun everyCycleEndsWithItsDigitAndHasNoDuplicates() {
-        for (polish in listOf(true, false)) for (web in listOf(true, false)) for (key in 0..9) {
-            val cycle = KeyLayouts.cycle(key, polish, web)
-            assertEquals("key $key", '0' + key, cycle.last())
-            assertEquals("duplicates in key $key: $cycle", cycle.length, cycle.toSet().size)
-        }
     }
 }

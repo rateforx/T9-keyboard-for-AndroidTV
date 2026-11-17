@@ -77,6 +77,7 @@ class KeypadView(context: Context) : View(context) {
     private val modePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_DIM; textSize = sp(15f) }
 
     private var cycles: Array<String> = Array(10) { "" }
+    private var upperCycles: Array<String> = cycles
     private var activeKey = -1
     private var activeIndex = 0
     private var activeUpper = false
@@ -95,8 +96,10 @@ class KeypadView(context: Context) : View(context) {
             }
         }
 
-    fun setCycles(cycles: Array<String>) {
+    /** Lower- and upper-case cycles of every key (index = key), as provided by the layout. */
+    fun setCycles(cycles: Array<String>, upperCycles: Array<String>) {
         this.cycles = cycles
+        this.upperCycles = upperCycles
         invalidate()
     }
 
@@ -183,10 +186,10 @@ class KeypadView(context: Context) : View(context) {
 
     private fun drawCell(canvas: Canvas, digit: Int) {
         val rect = cellRects[digit]
-        val cycle = cycles[digit]
-        if (cycle.isEmpty()) return
         val active = if (digit == activeKey) activeIndex else -1
         val upper = if (digit == activeKey) activeUpper else upperCase
+        val cycle = (if (upper) upperCycles else cycles)[digit]
+        if (cycle.isEmpty()) return
         val letters = cycle.length - 1 // the last element is the digit itself
         val y = baseline(rect, letterPaint)
         val inset = dp(4f)
@@ -208,11 +211,7 @@ class KeypadView(context: Context) : View(context) {
         val end = minOf(letters, start + MAX_VISIBLE_CHARS)
         for (i in start until end) {
             val c = cycle[i]
-            oneChar[0] = when {
-                c == ' ' -> '␣'
-                upper -> c.uppercaseChar()
-                else -> c
-            }
+            oneChar[0] = if (c == ' ') '␣' else c
             val w = letterPaint.measureText(oneChar, 0, 1)
             if (i == active) {
                 tmp.set(x - inset, rect.top + inset, x + w + inset, rect.bottom - inset)

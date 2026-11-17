@@ -32,4 +32,6 @@ android {
 dependencies {
     // No runtime dependencies on purpose (no AndroidX) — framework APIs only.
     testImplementation("junit:junit:4.13.2")
+    // org.json is built into Android but only stubbed in JVM unit tests (used to parse layout files).
+    testImplementation("org.json:json:20260814")
 }
