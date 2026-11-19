@@ -35,7 +35,11 @@ class KeypadView(context: Context) : View(context) {
         private const val CELL_WIDTH_DP = 92f
         private const val KEY_INSET_DP = 2f // half the gap between key backgrounds
         private const val ROW_HEIGHT_DP = 44f
-        private const val COLUMN_WIDTH_DP = 96f
+        // The button column is as wide as its widest label (bold, as when highlighted) plus padding.
+        private const val COLUMN_PADDING_DP = 10f
+        private const val COLUMN_MIN_DP = 48f
+        private const val COLUMN_MAX_DP = 120f // longer action labels get an ellipsis
+        private const val ICON_SCALE = 0.72f // settings icon size relative to the button height
         private const val BUTTON_GAP_DP = 3f
         private const val MARGIN_H_DP = 48f // TV overscan-safe margins
         private const val MARGIN_V_DP = 27f
@@ -144,9 +148,19 @@ class KeypadView(context: Context) : View(context) {
     }
 
     fun setActionLabel(label: String) {
+        if (label == actionLabel) return
         actionLabel = label
-        updateActionButtonLabel()
+        if (width > 0) layoutPanel(width, height) // the column width follows the label
         invalidate()
+    }
+
+    private fun columnWidth(): Float {
+        var widest = 0f
+        for (label in arrayOf(actionLabel, "⌫", "⌦", "Aa", "123", "abc")) {
+            widest = maxOf(widest, buttonFocusTextPaint.measureText(label))
+        }
+        val icon = dp(ROW_HEIGHT_DP) * 4 / BUTTON_COUNT * ICON_SCALE
+        return (maxOf(widest, icon) + 2 * dp(COLUMN_PADDING_DP)).coerceIn(dp(COLUMN_MIN_DP), dp(COLUMN_MAX_DP))
     }
 
     private fun updateActionButtonLabel() {
@@ -178,7 +192,7 @@ class KeypadView(context: Context) : View(context) {
     private fun layoutPanel(w: Int, h: Int) {
         val pad = dp(PADDING_DP)
         val rowH = dp(ROW_HEIGHT_DP)
-        val colW = dp(COLUMN_WIDTH_DP)
+        val colW = columnWidth()
         val gap = dp(GAP_DP)
         val pw = minOf(2 * pad + 3 * dp(CELL_WIDTH_DP) + gap + colW, w - 2 * dp(MARGIN_H_DP))
         val ph = panelHeight()
@@ -304,7 +318,7 @@ class KeypadView(context: Context) : View(context) {
         }
         val p = if (focused) buttonFocusTextPaint else buttonTextPaint
         if (i == BTN_SETTINGS) {
-            val half = (rect.height() * 0.36f).toInt()
+            val half = (rect.height() * ICON_SCALE / 2).toInt()
             val cx = rect.centerX().toInt()
             val cy = rect.centerY().toInt()
             settingsIcon.setBounds(cx - half, cy - half, cx + half, cy + half)
