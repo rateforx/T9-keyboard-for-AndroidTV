@@ -16,12 +16,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        // TODO(M3): settle the final applicationId before the first Play upload (it can never change).
+        // Final: already published on GitHub, so updates must keep this id (it can never change on Play either).
         applicationId = "io.github.rateforx.t9tv"
         minSdk = 21
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     signingConfigs {

@@ -43,3 +43,6 @@ captures/
 
 # The Gradle wrapper jar must be committed despite the *.jar rule above
 !gradle/wrapper/gradle-wrapper.jar
+
+# Local planning notes (kept out of the public repo)
+PLAN.md

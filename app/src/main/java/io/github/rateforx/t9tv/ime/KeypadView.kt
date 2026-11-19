@@ -258,7 +258,7 @@ class KeypadView(context: Context) : View(context) {
         val end = minOf(letters, start + MAX_VISIBLE_CHARS)
 
         // Condense the letters when they don't fit the cell (wide upper case, long cycles).
-        val charGap = dp(2f)
+        val charGap = dp(4f)
         var needed = 0f
         for (i in start until end) needed += letterPaint.measureText(displayChar(cycle[i]), 0, 1) + charGap
         val avail = rect.right - dp(4f) - x - (if (end < letters) modePaint.measureText(ELLIPSIS) else 0f)
@@ -266,15 +266,18 @@ class KeypadView(context: Context) : View(context) {
         letterPaint.textScaleX = scale
         highlightTextPaint.textScaleX = scale
 
+        // The highlight goes first, so it never covers the neighbouring letters.
+        if (active in start until end) {
+            var hx = x
+            for (i in start until active) hx += letterPaint.measureText(displayChar(cycle[i]), 0, 1) + charGap * scale
+            val hw = highlightTextPaint.measureText(displayChar(cycle[active]), 0, 1)
+            val hpad = charGap / 2 * scale
+            tmp.set(hx - hpad, rect.top + inset, hx + hw + hpad, rect.bottom - inset)
+            canvas.drawRoundRect(tmp, inset, inset, highlightPaint)
+        }
         for (i in start until end) {
             val w = letterPaint.measureText(displayChar(cycle[i]), 0, 1)
-            if (i == active) {
-                tmp.set(x - inset, rect.top + inset, x + w + inset, rect.bottom - inset)
-                canvas.drawRoundRect(tmp, inset, inset, highlightPaint)
-                canvas.drawText(oneChar, 0, 1, x, y, highlightTextPaint)
-            } else {
-                canvas.drawText(oneChar, 0, 1, x, y, letterPaint)
-            }
+            canvas.drawText(oneChar, 0, 1, x, y, if (i == active) highlightTextPaint else letterPaint)
             x += w + charGap * scale
         }
         letterPaint.textScaleX = 1f
