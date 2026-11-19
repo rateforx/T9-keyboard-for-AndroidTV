@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tells the debug build apart from the release one in the app list and the keyboard picker. -->
+    <string name="app_name">T9 TV Keyboard (debug)</string>
+    <string name="ime_name">T9 TV Keyboard (debug)</string>
+</resources>

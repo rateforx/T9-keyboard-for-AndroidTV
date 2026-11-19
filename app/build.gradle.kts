@@ -1,5 +1,14 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
+}
+
+// Release signing comes from the git-ignored local.properties (release.storeFile, release.storePassword,
+// release.keyAlias, release.keyPassword). Without it the release build stays unsigned.
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -15,8 +24,24 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        localProps.getProperty("release.storeFile")?.let { path ->
+            create("release") {
+                storeFile = file(path)
+                storePassword = localProps.getProperty("release.storePassword")
+                keyAlias = localProps.getProperty("release.keyAlias")
+                keyPassword = localProps.getProperty("release.keyPassword")
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            // Lets the debug build live next to the release one on the same TV.
+            applicationIdSuffix = ".debug"
+        }
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

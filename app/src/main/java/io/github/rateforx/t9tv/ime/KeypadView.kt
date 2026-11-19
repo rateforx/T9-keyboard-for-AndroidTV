@@ -38,6 +38,7 @@ class KeypadView(context: Context) : View(context) {
         private const val GAP_DP = 8f
         private const val CORNER_DP = 10f
         private const val MAX_VISIBLE_CHARS = 6
+        private const val ELLIPSIS = "…"
 
         private const val COLOR_PANEL = 0xE6202124.toInt()
         private const val COLOR_TEXT = 0xFFE8EAED.toInt()
@@ -209,10 +210,18 @@ class KeypadView(context: Context) : View(context) {
         val start = if (letters <= MAX_VISIBLE_CHARS || active < 0 || active == letters) 0
         else (active - MAX_VISIBLE_CHARS / 2).coerceIn(0, letters - MAX_VISIBLE_CHARS)
         val end = minOf(letters, start + MAX_VISIBLE_CHARS)
+
+        // Condense the letters when they don't fit the cell (wide upper case, long cycles).
+        val charGap = dp(2f)
+        var needed = 0f
+        for (i in start until end) needed += letterPaint.measureText(displayChar(cycle[i]), 0, 1) + charGap
+        val avail = rect.right - dp(4f) - x - (if (end < letters) modePaint.measureText(ELLIPSIS) else 0f)
+        val scale = if (needed > avail && avail > 0f) avail / needed else 1f
+        letterPaint.textScaleX = scale
+        highlightTextPaint.textScaleX = scale
+
         for (i in start until end) {
-            val c = cycle[i]
-            oneChar[0] = if (c == ' ') '␣' else c
-            val w = letterPaint.measureText(oneChar, 0, 1)
+            val w = letterPaint.measureText(displayChar(cycle[i]), 0, 1)
             if (i == active) {
                 tmp.set(x - inset, rect.top + inset, x + w + inset, rect.bottom - inset)
                 canvas.drawRoundRect(tmp, inset, inset, highlightPaint)
@@ -220,9 +229,17 @@ class KeypadView(context: Context) : View(context) {
             } else {
                 canvas.drawText(oneChar, 0, 1, x, y, letterPaint)
             }
-            x += w + dp(2f)
+            x += w + charGap * scale
         }
-        if (end < letters) canvas.drawText("…", x, y, modePaint)
+        letterPaint.textScaleX = 1f
+        highlightTextPaint.textScaleX = 1f
+        if (end < letters) canvas.drawText(ELLIPSIS, x, y, modePaint)
+    }
+
+    /** Puts the visible form of [c] into [oneChar] (space is shown as ␣) and returns the buffer. */
+    private fun displayChar(c: Char): CharArray {
+        oneChar[0] = if (c == ' ') '␣' else c
+        return oneChar
     }
 
     private fun drawButton(canvas: Canvas, i: Int) {

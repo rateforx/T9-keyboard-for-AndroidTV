@@ -45,6 +45,9 @@ class T9ImeService : InputMethodService() {
     private var debugLog = false
     private var numeric = false
     private var caseMode = CaseMode.LOWER
+
+    /** Abc picked by hand: the next letter is upper case even in the middle of a sentence. */
+    private var shiftOnce = false
     private var focusedButton = KeypadView.BTN_BACKSPACE
     private var longPressHandled = false
     private var actionLabel = "↵"
@@ -92,6 +95,14 @@ class T9ImeService : InputMethodService() {
         super.onStartInputView(info, restarting)
         focusedButton = KeypadView.BTN_BACKSPACE
         syncKeypad()
+    }
+
+    /** Keeps the cheat sheet showing the case the next letter will get (caret moves, deletes, commits). */
+    override fun onUpdateSelection(
+        oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int, candidatesStart: Int, candidatesEnd: Int,
+    ) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        if (isInputViewShown && !engine.hasPending) refreshCase()
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
@@ -188,10 +199,12 @@ class T9ImeService : InputMethodService() {
             return
         }
         if (engine.hasPending && engine.activeKey != digit) commitPending()
-        val upper = if (engine.hasPending) false else isUpperNow(ic)
-        val c = engine.press(digit, upper)
+        val newCycle = !engine.hasPending
+        val c = engine.press(digit, upperCase = newCycle && isUpperNow(ic))
+        if (newCycle && Character.isLetter(c)) shiftOnce = false
         ic.setComposingText(c.toString(), 1)
         keypad?.setActive(engine.activeKey, engine.activeIndex, engine.activeUpper)
+        if (newCycle) refreshCase()
         handler.postDelayed(commitPendingRunnable, timeoutMs)
     }
 
@@ -238,7 +251,12 @@ class T9ImeService : InputMethodService() {
             KeypadView.BTN_DELETE -> deleteForward()
             KeypadView.BTN_CASE -> {
                 commitPending()
-                if (numeric) numeric = false else caseMode = caseMode.next()
+                if (numeric) {
+                    numeric = false
+                } else {
+                    caseMode = caseMode.next()
+                    shiftOnce = caseMode == CaseMode.SENTENCE
+                }
                 syncKeypad()
             }
             KeypadView.BTN_NUMERIC -> {
@@ -344,7 +362,13 @@ class T9ImeService : InputMethodService() {
             )
         layout = layouts.selected()
         engine.setLayout(layout, web)
-        caseMode = if (!password && !web && (type and CAP_FLAGS) != 0) CaseMode.SENTENCE else CaseMode.LOWER
+        caseMode = when {
+            password || web -> CaseMode.LOWER
+            (type and InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS) != 0 -> CaseMode.UPPER
+            (type and CAP_FLAGS) != 0 -> CaseMode.SENTENCE
+            else -> CaseMode.LOWER
+        }
+        shiftOnce = false
         actionLabel = actionLabelFor(ei)
         syncKeypad()
     }
@@ -363,32 +387,39 @@ class T9ImeService : InputMethodService() {
         }
     }
 
-    /** Upper case for a new multi-tap cycle according to the case mode and the text before the cursor. */
+    /**
+     * Upper case for a new multi-tap cycle at the cursor: ABC always, abc never, Abc for the
+     * letter after picking it by hand and at sentence starts (asks the field when it has CAP_* flags).
+     */
     private fun isUpperNow(ic: InputConnection): Boolean = when (caseMode) {
         CaseMode.UPPER -> true
         CaseMode.LOWER -> false
-        CaseMode.SENTENCE -> {
+        CaseMode.SENTENCE -> shiftOnce || run {
             val ei = currentInputEditorInfo
             if (ei != null && (ei.inputType and CAP_FLAGS) != 0) ic.getCursorCapsMode(ei.inputType) != 0
-            else isSentenceStart(ic.getTextBeforeCursor(3, 0))
+            else CaseRules.isSentenceStart(ic.getTextBeforeCursor(CaseRules.LOOKBEHIND, 0))
         }
-    }
-
-    private fun isSentenceStart(before: CharSequence?): Boolean {
-        if (before == null) return false
-        if (before.isEmpty() || before.last() == '\n') return true
-        if (before.last() != ' ') return false
-        val trimmed = before.trimEnd()
-        return trimmed.isEmpty() || trimmed.last() in ".!?"
     }
 
     private fun syncKeypad() {
         val v = keypad ?: return
         v.setCycles(engine.cycles, engine.upperCycles)
-        v.setModeLabel(if (numeric) "123" else layout.caseLabels[caseMode.ordinal], caseMode == CaseMode.UPPER, numeric)
         v.setActionLabel(actionLabel)
         v.focusedButton = focusedButton
         if (!engine.hasPending) v.clearActive()
+        refreshCase()
+    }
+
+    /** Mode label and the case of the cheat sheet letters: what the next press of a key types. */
+    private fun refreshCase() {
+        val v = keypad ?: return
+        val upper = when {
+            numeric || caseMode == CaseMode.LOWER -> false
+            caseMode == CaseMode.UPPER -> true
+            engine.hasPending -> shiftOnce // after a pending letter the next one is lower case
+            else -> currentInputConnection?.let { isUpperNow(it) } ?: false
+        }
+        v.setModeLabel(if (numeric) "123" else layout.caseLabels[caseMode.ordinal], upper, numeric)
     }
 
     private fun showPanel() {
