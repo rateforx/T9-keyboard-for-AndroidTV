@@ -1,5 +1,6 @@
 package io.github.rateforx.t9tv.ime
 
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -18,6 +19,9 @@ import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import io.github.rateforx.t9tv.R
+import io.github.rateforx.t9tv.settings.PanelPosition
+import io.github.rateforx.t9tv.settings.Prefs
+import io.github.rateforx.t9tv.setup.SetupActivity
 
 /**
  * Multi-tap keyboard driven by the 0–9 buttons of a TV remote.
@@ -34,6 +38,7 @@ class T9ImeService : InputMethodService() {
         fun next(): CaseMode = entries[(ordinal + 1) % entries.size]
     }
 
+    private lateinit var prefs: Prefs
     private lateinit var layouts: LayoutRepository
     private lateinit var layout: KeyLayout
     private lateinit var engine: MultiTapEngine
@@ -51,12 +56,14 @@ class T9ImeService : InputMethodService() {
     private var focusedButton = KeypadView.BTN_BACKSPACE
     private var longPressHandled = false
     private var actionLabel = "↵"
-    private val timeoutMs = 1000L
+    private var timeoutMs = Prefs.DEFAULT_TIMEOUT_MS.toLong()
+    private var panelPosition = PanelPosition.BOTTOM_RIGHT
     private val longPressMs = ViewConfiguration.getLongPressTimeout().toLong()
 
     override fun onCreate() {
         super.onCreate()
         debugLog = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        prefs = Prefs(this)
         layouts = LayoutRepository(this)
         layout = layouts.selected()
         engine = MultiTapEngine(layout)
@@ -121,12 +128,15 @@ class T9ImeService : InputMethodService() {
         if (!isInputViewShown || v.height == 0) return
         val loc = IntArray(2)
         v.getLocationInWindow(loc)
+        // The panel floats over the app: with no content/visible insets apps neither shrink their
+        // whole width nor pan for a panel that only covers one corner (since Android 11 both follow
+        // the content inset, so it is all or nothing). A field under the panel: switch its side.
+        val bottom = loc[1] + v.height
+        outInsets.contentTopInsets = bottom
+        outInsets.visibleTopInsets = bottom
         val p = v.panelRect
-        val top = loc[1] + p.top
-        outInsets.contentTopInsets = top
-        outInsets.visibleTopInsets = top
         outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_REGION
-        outInsets.touchableRegion.set(loc[0] + p.left, top, loc[0] + p.right, loc[1] + p.bottom)
+        outInsets.touchableRegion.set(loc[0] + p.left, loc[1] + p.top, loc[0] + p.right, loc[1] + p.bottom)
     }
 
     // ---------------------------------------------------------------- keys
@@ -265,7 +275,15 @@ class T9ImeService : InputMethodService() {
                 syncKeypad()
             }
             KeypadView.BTN_ACTION -> performEnter()
+            KeypadView.BTN_SETTINGS -> openSettings()
         }
+    }
+
+    /** ⚙ hides the keyboard and opens the app's settings screen (Back returns to the app). */
+    private fun openSettings() {
+        commitPending()
+        requestHideSelf(0)
+        startActivity(Intent(this, SetupActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     // ---------------------------------------------------------------- editing
@@ -360,7 +378,10 @@ class T9ImeService : InputMethodService() {
                 variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                 variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
             )
+        // Settings may have changed on the setup screen since the last field.
         layout = layouts.selected()
+        timeoutMs = prefs.timeoutMs.toLong()
+        panelPosition = prefs.panelPosition
         engine.setLayout(layout, web)
         caseMode = when {
             password || web -> CaseMode.LOWER
@@ -403,6 +424,7 @@ class T9ImeService : InputMethodService() {
 
     private fun syncKeypad() {
         val v = keypad ?: return
+        v.position = panelPosition
         v.setCycles(engine.cycles, engine.upperCycles)
         v.setActionLabel(actionLabel)
         v.focusedButton = focusedButton

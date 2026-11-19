@@ -2,13 +2,14 @@ package io.github.rateforx.t9tv.ime
 
 import android.content.Context
 import android.util.Log
+import io.github.rateforx.t9tv.settings.Prefs
 import java.util.Locale
 
 /** Loads the bundled layouts from `assets/layouts/` and remembers the selected one. */
 class LayoutRepository(context: Context) {
 
     private val appContext = context.applicationContext
-    private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private val prefs = Prefs(appContext)
     private var cache: List<KeyLayout>? = null
 
     /** All valid bundled layouts, sorted by name. Invalid files are logged and skipped. */
@@ -18,14 +19,14 @@ class LayoutRepository(context: Context) {
     fun selected(): KeyLayout {
         val layouts = all()
         if (layouts.isEmpty()) return KeyLayout.digitsOnly()
-        val id = prefs.getString(PREF_LAYOUT, null)
+        val id = prefs.layoutId
         return layouts.firstOrNull { it.id == id }
             ?: layouts.firstOrNull { it.locale.language == Locale.getDefault().language }
             ?: layouts.first()
     }
 
     fun select(layout: KeyLayout) {
-        prefs.edit().putString(PREF_LAYOUT, layout.id).apply()
+        prefs.layoutId = layout.id
     }
 
     private fun load(): List<KeyLayout> {
@@ -45,7 +46,5 @@ class LayoutRepository(context: Context) {
     private companion object {
         const val TAG = "T9IME"
         const val DIR = "layouts"
-        const val PREFS = "settings"
-        const val PREF_LAYOUT = "layout"
     }
 }
